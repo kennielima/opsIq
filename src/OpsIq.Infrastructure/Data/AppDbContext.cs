@@ -1,0 +1,15 @@
+using Microsoft.EntityFrameworkCore;
+using OpsIq.Core.Entities;
+namespace OpsIq.Infrastructure.Data;
+
+public class AppDbContext : DbContext
+{
+    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
+    public DbSet<Tenant> Tenants { get; set; }
+    public DbSet<Document> Documents { get; set; }
+    public DbSet<Chunk> Chunks { get; set; }
+    public DbSet<Conversation> Conversations { get; set; }
+    public DbSet<Message> Messages { get; set; }
+    public DbSet<Citation> Citations { get; set; }
+    public DbSet<ApiKey> ApiKeys { get; set; }
+}

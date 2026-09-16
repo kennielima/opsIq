@@ -1,0 +1,9 @@
+namespace opsiq.Models;
+
+using System.ComponentModel.DataAnnotations;
+public class RequestDto
+{
+    [Required]
+    [MinLength(10)]
+    public string Question { get; set; } = string.Empty;
+}

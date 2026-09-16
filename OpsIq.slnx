@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/OpsIq.Api/OpsIq.Api.csproj" />
+    <Project Path="src/OpsIq.Core/OpsIq.Core.csproj" />
+    <Project Path="src/OpsIq.Infrastructure/OpsIq.Infrastructure.csproj" />
+  </Folder>
+</Solution>
