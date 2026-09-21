@@ -2,6 +2,7 @@ using opsiq.Models;
 using opsiq.Services;
 
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace opsiq.Controllers;
 
@@ -15,6 +16,12 @@ public class QueryController : ControllerBase
         _queryService = queryService;
     }
 
+    [HttpGet("protected")]
+    [Authorize(AuthenticationSchemes = "ApiKey")]
+    public IActionResult Protected()
+    {
+        return Ok("You have a valid API key.");
+    }
     [HttpPost]
     // [Route("ask")]
     public async Task<ActionResult> GetTaskAsync([FromBody] RequestDto request)
