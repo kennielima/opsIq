@@ -30,10 +30,8 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<AuthenticationS
             return AuthenticateResult.Fail("Authorization header is missing.");
 
         var hashedKey = HashApiKey(authHeader);
-        Console.WriteLine($"Looking for hash: {hashedKey}");
 
         var apiKey = await _context.ApiKeys.FirstOrDefaultAsync(key => key.HashedKey == hashedKey);
-        Console.WriteLine($"Looking for key: {apiKey}");
         if (apiKey == null)
             return AuthenticateResult.Fail("Invalid API key.");
 
@@ -41,14 +39,10 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<AuthenticationS
         {
             new Claim("TenantId", apiKey.TenantId.ToString()),
         };
-        Console.WriteLine($"claims: {claims}");
         var identity = new ClaimsIdentity(claims, Scheme.Name);
-        Console.WriteLine($"scheme: {Scheme.Name}");
-        Console.WriteLine($"identity: {identity}");
         var principal = new ClaimsPrincipal(identity);
-        Console.WriteLine($"principal: {principal}");
         var ticket = new AuthenticationTicket(principal, Scheme.Name);
-        Console.WriteLine($"ticket: {ticket}");
+
         return AuthenticateResult.Success(ticket);
     }
 
