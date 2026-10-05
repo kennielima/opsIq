@@ -20,23 +20,23 @@ public class AuthController : ControllerBase
         _signInManager = signInManager;
     }
 
-    [HttpPost]
-    [Route("register")]
-    [AllowAnonymous]
-    public async Task<IActionResult> Register(RegisterDto registerDto)
-    {
-        var user = new AppUser
-        {
-            UserName = registerDto.Email,
-            Email = registerDto.Email,
-        };
-        var result = await _userManager.CreateAsync(user, registerDto.Password);
-        if (!result.Succeeded)
-        {
-            return BadRequest("User registration failed.");
-        }
-        return Ok(user);
-    }
+    // [HttpPost]
+    // [Route("register")]
+    // [AllowAnonymous]
+    // public async Task<IActionResult> Register(RegisterDto registerDto)
+    // {
+    //     var user = new AppUser
+    //     {
+    //         UserName = registerDto.Email,
+    //         Email = registerDto.Email,
+    //     };
+    //     var result = await _userManager.CreateAsync(user, registerDto.Password);
+    //     if (!result.Succeeded)
+    //     {
+    //         return BadRequest("User registration failed.");
+    //     }
+    //     return Ok(user);
+    // }
 
     [HttpPost]
     [Route("login")]

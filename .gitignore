@@ -3,5 +3,7 @@ bin/
 *.user
 .vs/
 .vscode/
-/CLAUDE.md
+*.md
 docs/
+*.pdf
+uploads/
