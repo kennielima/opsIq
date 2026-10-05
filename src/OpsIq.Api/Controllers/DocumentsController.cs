@@ -2,21 +2,26 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OpsIq.Infrastructure.Data;
 using OpsIq.Core.Entities;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
 namespace OpsIq.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(AuthenticationSchemes = "ApiKey")]
+[Authorize]
 public class DocumentsController : ControllerBase
 {
     private readonly AppDbContext _context;
+    private readonly UserManager<AppUser> _userManager;
 
-    public DocumentsController(AppDbContext context)
+    public DocumentsController(AppDbContext context, UserManager<AppUser> userManager)
     {
         _context = context;
+        _userManager = userManager;
     }
     [HttpPost]
-    public async Task<IActionResult> Upload(IFormFile file)
+    [Authorize(AuthenticationSchemes = "ApiKey")]
+    public async Task<ActionResult<Document>> Upload(IFormFile file)
     {
         var tenantId = User.FindFirst("TenantId")?.Value;
         if (string.IsNullOrEmpty(tenantId)) return BadRequest("No tenant");
@@ -39,6 +44,38 @@ public class DocumentsController : ControllerBase
         _context.Documents.Add(doc);
         await _context.SaveChangesAsync();
         return Ok(doc);
-        // Accepted(doc);
+    }
+
+    [HttpGet]
+    public async Task<ActionResult<List<Document>>> ListDocuments()
+    {
+        var user = await _userManager.GetUserAsync(User);
+        if (user == null) return BadRequest("No user found.");
+        var documents = await _context.Documents.Where(d => d.TenantId == user.TenantId && !d.IsDeleted).ToListAsync();
+        return Ok(documents);
+    }
+
+    [HttpGet]
+    [Route("{id}")]
+    public async Task<ActionResult<Document>> GetDocument(Guid id)
+    {
+        var user = await _userManager.GetUserAsync(User);
+        if (user == null) return BadRequest("No user found.");
+        var document = await _context.Documents.Where(d => d.TenantId == user.TenantId && d.Id == id && !d.IsDeleted).FirstOrDefaultAsync();
+        if (document == null) return NotFound("Document not found.");
+        return Ok(document);
+    }
+
+    [HttpDelete]
+    [Route("{id}")]
+    public async Task<IActionResult> DeleteDocument(Guid id)
+    {
+        var user = await _userManager.GetUserAsync(User);
+        if (user == null) return BadRequest("No user found.");
+        var document = await _context.Documents.Where(d => d.TenantId == user.TenantId && d.Id == id && !d.IsDeleted).FirstOrDefaultAsync();
+        if (document == null) return NotFound("Document not found.");
+        document.IsDeleted = true;
+        await _context.SaveChangesAsync();
+        return NoContent();
     }
 }
