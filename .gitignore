@@ -7,3 +7,5 @@ bin/
 docs/
 *.pdf
 uploads/
+appsettings.Development.json
+*appsettings.Development.json

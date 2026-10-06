@@ -1,8 +1,8 @@
-
-
+using System.Security.Cryptography;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using OpsIq.Api.Authentication;
 using OpsIq.Api.Models;
 using OpsIq.Core.Entities;
 using OpsIq.Infrastructure.Data;
@@ -15,10 +15,65 @@ namespace OpsIq.Api.Controllers;
 public class TenantsController : ControllerBase
 {
     private readonly UserManager<AppUser> _userManager;
+    private readonly AppDbContext _context;
     public TenantsController(AppDbContext context, UserManager<AppUser> userManager)
     {
         _userManager = userManager;
+        _context = context;
     }
+
+    [HttpPost]
+    [Authorize(Roles = "SuperAdmin")]
+    public async Task<IActionResult> CreateTenant([FromBody] CreateTenantDto createTenantDto)
+    {
+        var randomBytes = RandomNumberGenerator.GetBytes(32);
+        var rawKey = "sk_" + Convert.ToBase64String(randomBytes)
+            .Replace("+", "-").Replace("/", "_").TrimEnd('=');
+        var hashed = ApiKeyAuthenticationHandler.HashApiKey(rawKey);
+
+        var tenant = new Tenant
+        {
+            Id = Guid.NewGuid(),
+            Name = createTenantDto.TenantName,
+            Slug = createTenantDto.TenantSlug,
+        };
+        _context.Tenants.Add(tenant);
+
+        var apiKey = new ApiKey
+        {
+            Id = Guid.NewGuid(),
+            TenantId = tenant.Id,
+            HashedKey = hashed
+        };
+        _context.ApiKeys.Add(apiKey);
+
+        var admin = new AppUser
+        {
+            Email = createTenantDto.AdminEmail,
+            UserName = createTenantDto.AdminEmail,
+            DisplayName = createTenantDto.AdminDisplayName,
+            TenantId = tenant.Id,
+            Role = UserRole.TenantAdmin
+        };
+        var adminResult = await _userManager.CreateAsync(admin, createTenantDto.AdminPassword);
+        if (!adminResult.Succeeded)
+        {
+            return BadRequest(adminResult.Errors.Select(e => e.Description));
+        }
+        await _context.SaveChangesAsync();
+        return Ok(new CreateTenantResponseDto
+        {
+            TenantId = tenant.Id,
+            Name = tenant.Name,
+            Slug = tenant.Slug,
+            ApiKey = rawKey,
+            AdminId = admin.Id,
+            AdminEmail = admin.Email!,
+            DisplayName = admin.DisplayName,
+            Role = admin.Role.ToString()
+        });
+    }
+
 
     [HttpPost]
     [Route("{tenantId}/users")]
@@ -38,6 +93,6 @@ public class TenantsController : ControllerBase
 
         var result = await _userManager.CreateAsync(user, createUserDto.Password);
         if (!result.Succeeded) return BadRequest(result.Errors.Select(e => e.Description));
-        return Ok(user);
+        return Ok(new { user.Id, user.Email, user.DisplayName, user.TenantId });
     }
 }

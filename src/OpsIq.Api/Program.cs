@@ -22,8 +22,40 @@ builder.Services.AddIdentity<AppUser, IdentityRole<Guid>>()
 
 builder.Services.AddAuthentication()
     .AddScheme<AuthenticationSchemeOptions, ApiKeyAuthenticationHandler>("ApiKey", null);
+
+builder.Services.AddScoped<IUserClaimsPrincipalFactory<AppUser>, AppUserClaimsFactory>();
+
 var app = builder.Build();
 
+using (var scope = app.Services.CreateScope())
+{
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+    var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+
+    var email = config["SUPERADMIN_EMAIL"];
+    var password = config["SUPERADMIN_PASSWORD"];
+
+    if (!string.IsNullOrEmpty(email) && !string.IsNullOrEmpty(password))
+    {
+        var superAdminExists = await userManager.Users.AnyAsync(u => u.Role == UserRole.SuperAdmin);
+        if (!superAdminExists)
+        {
+            var superAdmin = new AppUser
+            {
+                Email = email,
+                UserName = email,
+                DisplayName = "Super Admin",
+                Role = UserRole.SuperAdmin
+
+            };
+            var result = await userManager.CreateAsync(superAdmin, password);
+            if (!result.Succeeded)
+            {
+                throw new Exception("Failed to create super admin user: " + string.Join(", ", result.Errors.Select(e => e.Description)));
+            }
+        }
+    }
+}
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
